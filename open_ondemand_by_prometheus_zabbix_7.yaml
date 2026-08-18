@@ -1,0 +1,1035 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+  - uuid: 4fa3edd3368c44fbb900f50980d5cfb6
+    name: Templates/Applications
+  templates:
+  - uuid: 06b7447dc5df4a5bacdae7aeda5dd78a
+    template: Open OnDemand by Prometheus
+    name: Open OnDemand by Prometheus
+    description: Monitors Open OnDemand via OSC ondemand_exporter using a local Zabbix agent. The agent fetches localhost:9301/metrics with web.page.get,
+      so the exporter port does not need to be exposed to the Zabbix server/proxy. Includes active PUNs, Apache client/WebSocket connections,
+      PUN resource usage, Passenger dashboard metrics, exporter collector health, graphs, dashboards, and alerts.
+    groups:
+    - name: Templates/Applications
+    items:
+    - uuid: 4890f56c30754ac2bb02ac734ce4e157
+      name: 'Open OnDemand: Get Prometheus metrics'
+      key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      delay: 1m
+      history: 1h
+      trends: '0'
+      value_type: TEXT
+      description: Fetches the Open OnDemand exporter Prometheus endpoint locally through the Zabbix agent. The HTTP response headers returned
+        by web.page.get are stripped before Prometheus preprocessing.
+      preprocessing:
+      - type: REGEX
+        parameters:
+        - (?s)^.*?\r?\n\r?\n(.*)$
+        - \1
+        error_handler: DISCARD_VALUE
+      tags:
+      - tag: component
+        value: raw
+      - tag: Application
+        value: Open OnDemand
+      triggers:
+      - uuid: 99a7f4e8e0f34b32a2d819cb6ef6377d
+        expression: nodata(/Open OnDemand by Prometheus/web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"],5m)=1
+        name: 'Open OnDemand: Metrics endpoint unavailable'
+        priority: AVERAGE
+        description: No data has been received from the Open OnDemand exporter for 5 minutes.
+    - uuid: f11d8f9a31a24cc79e0d6e6df2a9b134
+      name: 'Open OnDemand: Active PUNs'
+      type: DEPENDENT
+      key: ood.active_puns
+      history: 30d
+      value_type: UNSIGNED
+      description: Number of active Per-User NGINX (PUN) instances.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_active_puns
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: pun
+      - tag: Application
+        value: Open OnDemand
+    - uuid: e9181f1c4d024c15beffc588859dcd9f
+      name: 'Open OnDemand: Rack apps'
+      type: DEPENDENT
+      key: ood.rack_apps
+      history: 30d
+      value_type: UNSIGNED
+      description: Number of running Rack applications.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_rack_apps
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: apps
+      - tag: Application
+        value: Open OnDemand
+    - uuid: f5d9eba6897a4e70af799d9ef7357382
+      name: 'Open OnDemand: Node apps'
+      type: DEPENDENT
+      key: ood.node_apps
+      history: 30d
+      value_type: UNSIGNED
+      description: Number of running Node applications.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_node_apps
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: apps
+      - tag: Application
+        value: Open OnDemand
+    - uuid: 3c18e0979f994fd1ba50af752dfdbc3f
+      name: 'Open OnDemand: Client connections'
+      type: DEPENDENT
+      key: ood.client_connections
+      history: 30d
+      value_type: UNSIGNED
+      description: Number of client connections reported by Apache mod_status.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_client_connections
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: connections
+      - tag: Application
+        value: Open OnDemand
+    - uuid: b0dcc1f3328448d1a355acc0afbb199d
+      name: 'Open OnDemand: Unique client connections'
+      type: DEPENDENT
+      key: ood.unique_client_connections
+      history: 30d
+      value_type: UNSIGNED
+      description: Number of unique client connections reported by Apache mod_status.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_unique_client_connections
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: connections
+      - tag: Application
+        value: Open OnDemand
+    - uuid: 7f9e426545f64517863ce18ca6d7b3f5
+      name: 'Open OnDemand: WebSocket connections'
+      type: DEPENDENT
+      key: ood.websocket_connections
+      history: 30d
+      value_type: UNSIGNED
+      description: Number of WebSocket connections reported by Apache mod_status.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_websocket_connections
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: connections
+      - tag: Application
+        value: Open OnDemand
+    - uuid: 3690a9d9bdba48018dea24f3b595e122
+      name: 'Open OnDemand: Unique WebSocket clients'
+      type: DEPENDENT
+      key: ood.unique_websocket_clients
+      history: 30d
+      value_type: UNSIGNED
+      description: Number of unique WebSocket clients reported by Apache mod_status.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_unique_websocket_clients
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: connections
+      - tag: Application
+        value: Open OnDemand
+    - uuid: 14b442ccdec04a4fb18768dcd5573ca5
+      name: 'Open OnDemand: PUN CPU time'
+      type: DEPENDENT
+      key: ood.pun.cpu_time
+      history: 30d
+      value_type: FLOAT
+      description: Aggregate CPU time consumed by all active PUN processes.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_pun_cpu_time
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: pun
+      - tag: Application
+        value: Open OnDemand
+      units: s
+    - uuid: 114feffc6b7e48649091ff5f220ba1f3
+      name: 'Open OnDemand: PUN RSS memory'
+      type: DEPENDENT
+      key: ood.pun.memory.rss
+      history: 30d
+      value_type: FLOAT
+      description: Aggregate resident memory used by all active PUN processes.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_pun_memory{type="rss"}
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: pun
+      - tag: Application
+        value: Open OnDemand
+      units: B
+    - uuid: d95318a2720e4debb7d3b317b5ea14cf
+      name: 'Open OnDemand: PUN virtual memory'
+      type: DEPENDENT
+      key: ood.pun.memory.vms
+      history: 30d
+      value_type: FLOAT
+      description: Aggregate virtual memory used by all active PUN processes.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_pun_memory{type="vms"}
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: pun
+      - tag: Application
+        value: Open OnDemand
+      units: B
+    - uuid: 194692b09b3643e0b09f6633e7a96ff7
+      name: 'Open OnDemand: PUN memory utilization'
+      type: DEPENDENT
+      key: ood.pun.memory.pct
+      history: 30d
+      value_type: FLOAT
+      description: Aggregate percentage of system memory used by active PUN processes.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_pun_memory_percent
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: pun
+      - tag: Application
+        value: Open OnDemand
+      units: '%'
+      triggers:
+      - uuid: fa112c0a86474265996571a5c444f35e
+        expression: min(/Open OnDemand by Prometheus/ood.pun.memory.pct,5m)>{$OOD.PUN.MEMORY.WARN}
+        name: 'Open OnDemand: PUN memory utilization is high'
+        priority: WARNING
+        description: Aggregate PUN memory utilization has remained above {$OOD.PUN.MEMORY.WARN}% for 5 minutes.
+    - uuid: 8b94edc4df7d465db8025e202ca8a26b
+      name: 'Open OnDemand: Passenger instances'
+      type: DEPENDENT
+      key: ood.passenger.instances
+      history: 30d
+      value_type: UNSIGNED
+      description: Number of Passenger instances.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_passenger_instances
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: passenger
+      - tag: Application
+        value: Open OnDemand
+    - uuid: 4232ce1f502f4053a0ef8e1274ec7dc2
+      name: 'Open OnDemand: Dashboard Passenger app count'
+      type: DEPENDENT
+      key: ood.passenger.dashboard.app_count
+      history: 30d
+      value_type: UNSIGNED
+      description: Passenger application instance count for the Open OnDemand dashboard.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_passenger_app_count{app="/var/www/ood/apps/sys/dashboard"}
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: passenger
+      - tag: Application
+        value: Open OnDemand
+    - uuid: 2c518ff76359468e978e3af9e9a0e85d
+      name: 'Open OnDemand: Dashboard Passenger processes'
+      type: DEPENDENT
+      key: ood.passenger.dashboard.processes
+      history: 30d
+      value_type: UNSIGNED
+      description: Passenger process count for the Open OnDemand dashboard.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_passenger_app_processes{app="/var/www/ood/apps/sys/dashboard"}
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: passenger
+      - tag: Application
+        value: Open OnDemand
+    - uuid: a9b4201b26bf43b1a3c02d12de088973
+      name: 'Open OnDemand: Dashboard Passenger RSS'
+      type: DEPENDENT
+      key: ood.passenger.dashboard.rss
+      history: 30d
+      value_type: FLOAT
+      description: RSS memory used by Passenger processes for the Open OnDemand dashboard.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_passenger_app_rss_bytes{app="/var/www/ood/apps/sys/dashboard"}
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: passenger
+      - tag: Application
+        value: Open OnDemand
+      units: B
+    - uuid: 91ab8885efa2429387eea82fc1453783
+      name: 'Open OnDemand: Dashboard Passenger real memory'
+      type: DEPENDENT
+      key: ood.passenger.dashboard.real_memory
+      history: 30d
+      value_type: FLOAT
+      description: Real memory used by Passenger processes for the Open OnDemand dashboard.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_passenger_app_real_memory_bytes{app="/var/www/ood/apps/sys/dashboard"}
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: passenger
+      - tag: Application
+        value: Open OnDemand
+      units: B
+    - uuid: 8d98078b38f54fa9b94656c02428f973
+      name: 'Open OnDemand: Dashboard Passenger CPU'
+      type: DEPENDENT
+      key: ood.passenger.dashboard.cpu_pct
+      history: 30d
+      value_type: FLOAT
+      description: CPU percentage reported for Passenger processes serving the Open OnDemand dashboard.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_passenger_app_cpu_percent{app="/var/www/ood/apps/sys/dashboard"}
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: passenger
+      - tag: Application
+        value: Open OnDemand
+      units: '%'
+    - uuid: 554a994f41304855bb4db4b16473a706
+      name: 'Open OnDemand: Dashboard Passenger requests (total)'
+      type: DEPENDENT
+      key: ood.passenger.dashboard.requests.total
+      history: 30d
+      value_type: UNSIGNED
+      description: Cumulative requests made to the Open OnDemand dashboard Passenger application.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_passenger_app_requests_total{app="/var/www/ood/apps/sys/dashboard"}
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: passenger
+      - tag: Application
+        value: Open OnDemand
+    - uuid: 1e575ecedfd2497497912206c182887c
+      name: 'Open OnDemand: Dashboard Passenger requests per minute'
+      type: DEPENDENT
+      key: ood.passenger.dashboard.requests.per_min
+      history: 30d
+      value_type: FLOAT
+      units: requests/min
+      description: Request rate for the Open OnDemand dashboard Passenger application.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_passenger_app_requests_total{app="/var/www/ood/apps/sys/dashboard"}
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      - type: CHANGE_PER_SECOND
+        parameters:
+        - ''
+      - type: MULTIPLIER
+        parameters:
+        - '60'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: passenger
+      - tag: Application
+        value: Open OnDemand
+    - uuid: b22956cadd074c5ca9e887bd35afebd8
+      name: 'Open OnDemand: Dashboard Passenger average runtime'
+      type: DEPENDENT
+      key: ood.passenger.dashboard.average_runtime
+      history: 30d
+      value_type: FLOAT
+      description: Average runtime reported by ondemand_exporter for the Open OnDemand dashboard Passenger application.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_passenger_app_average_runtime_seconds{app="/var/www/ood/apps/sys/dashboard"}
+        - value
+        error_handler: CUSTOM_VALUE
+        error_handler_params: '0'
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: passenger
+      - tag: Application
+        value: Open OnDemand
+      units: s
+    - uuid: 6b482069def04ef78510afdeaf3a5b20
+      name: 'Open OnDemand exporter: apache collector duration'
+      type: DEPENDENT
+      key: ood.exporter.collector.apache.duration
+      history: 30d
+      value_type: FLOAT
+      description: Collection duration for the apache collector.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_exporter_collect_duration_seconds{collector="apache"}
+        - value
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: exporter
+      - tag: Application
+        value: Open OnDemand
+      units: s
+      triggers:
+      - uuid: 639dd2134c034d2196516aa2e11abf7f
+        expression: avg(/Open OnDemand by Prometheus/ood.exporter.collector.apache.duration,5m)>{$OOD.COLLECTOR.DURATION.WARN}
+        name: 'Open OnDemand exporter: apache collector is slow'
+        priority: WARNING
+        description: The apache collector's 5-minute average duration exceeded {$OOD.COLLECTOR.DURATION.WARN} seconds.
+    - uuid: 3eb7a17bdb9645d5b15e39340107fbab
+      name: 'Open OnDemand exporter: passenger collector duration'
+      type: DEPENDENT
+      key: ood.exporter.collector.passenger.duration
+      history: 30d
+      value_type: FLOAT
+      description: Collection duration for the passenger collector.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_exporter_collect_duration_seconds{collector="passenger"}
+        - value
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: exporter
+      - tag: Application
+        value: Open OnDemand
+      units: s
+      triggers:
+      - uuid: baa1c7b914c14eeaa0828487a070e910
+        expression: avg(/Open OnDemand by Prometheus/ood.exporter.collector.passenger.duration,5m)>{$OOD.COLLECTOR.DURATION.WARN}
+        name: 'Open OnDemand exporter: passenger collector is slow'
+        priority: WARNING
+        description: The passenger collector's 5-minute average duration exceeded {$OOD.COLLECTOR.DURATION.WARN} seconds.
+    - uuid: cb820a2adaaa4010a54fe041659540e3
+      name: 'Open OnDemand exporter: process collector duration'
+      type: DEPENDENT
+      key: ood.exporter.collector.process.duration
+      history: 30d
+      value_type: FLOAT
+      description: Collection duration for the process collector.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_exporter_collect_duration_seconds{collector="process"}
+        - value
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: exporter
+      - tag: Application
+        value: Open OnDemand
+      units: s
+      triggers:
+      - uuid: 0eb58fe1b81747efa725c9d753151df3
+        expression: avg(/Open OnDemand by Prometheus/ood.exporter.collector.process.duration,5m)>{$OOD.COLLECTOR.DURATION.WARN}
+        name: 'Open OnDemand exporter: process collector is slow'
+        priority: WARNING
+        description: The process collector's 5-minute average duration exceeded {$OOD.COLLECTOR.DURATION.WARN} seconds.
+    - uuid: d7ebc2b9641840a2948f7b926b60c918
+      name: 'Open OnDemand exporter: puns collector duration'
+      type: DEPENDENT
+      key: ood.exporter.collector.puns.duration
+      history: 30d
+      value_type: FLOAT
+      description: Collection duration for the puns collector.
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_exporter_collect_duration_seconds{collector="puns"}
+        - value
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: exporter
+      - tag: Application
+        value: Open OnDemand
+      units: s
+      triggers:
+      - uuid: 85f3f24f1c2a424aa7a01b5401b6f533
+        expression: avg(/Open OnDemand by Prometheus/ood.exporter.collector.puns.duration,5m)>{$OOD.COLLECTOR.DURATION.WARN}
+        name: 'Open OnDemand exporter: puns collector is slow'
+        priority: WARNING
+        description: The puns collector's 5-minute average duration exceeded {$OOD.COLLECTOR.DURATION.WARN} seconds.
+    - uuid: c5ba4db9b16943f5899fd253556b2ca7
+      name: 'Open OnDemand exporter: apache collector error'
+      type: DEPENDENT
+      key: ood.exporter.collector.apache.error
+      history: 30d
+      value_type: UNSIGNED
+      description: 'Error status of the apache collector: 0=no error, 1=error.'
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_exporter_collect_error{collector="apache"}
+        - value
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: exporter
+      - tag: Application
+        value: Open OnDemand
+      triggers:
+      - uuid: ba1bd03b76a9472bac8893fd800e2a48
+        expression: max(/Open OnDemand by Prometheus/ood.exporter.collector.apache.error,5m)>0
+        name: 'Open OnDemand exporter: apache collector error'
+        priority: AVERAGE
+        description: The apache collector reported an error.
+    - uuid: 12615eb6e2e84fb8b09d4636187bf713
+      name: 'Open OnDemand exporter: passenger collector error'
+      type: DEPENDENT
+      key: ood.exporter.collector.passenger.error
+      history: 30d
+      value_type: UNSIGNED
+      description: 'Error status of the passenger collector: 0=no error, 1=error.'
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_exporter_collect_error{collector="passenger"}
+        - value
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: exporter
+      - tag: Application
+        value: Open OnDemand
+      triggers:
+      - uuid: ccfc229144554bf2839d821c8491f456
+        expression: max(/Open OnDemand by Prometheus/ood.exporter.collector.passenger.error,5m)>0
+        name: 'Open OnDemand exporter: passenger collector error'
+        priority: AVERAGE
+        description: The passenger collector reported an error.
+    - uuid: ae3c077d167546e885368e7d84c1b97c
+      name: 'Open OnDemand exporter: process collector error'
+      type: DEPENDENT
+      key: ood.exporter.collector.process.error
+      history: 30d
+      value_type: UNSIGNED
+      description: 'Error status of the process collector: 0=no error, 1=error.'
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_exporter_collect_error{collector="process"}
+        - value
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: exporter
+      - tag: Application
+        value: Open OnDemand
+      triggers:
+      - uuid: 941234c2a80843bea9ac13deafb39e4e
+        expression: max(/Open OnDemand by Prometheus/ood.exporter.collector.process.error,5m)>0
+        name: 'Open OnDemand exporter: process collector error'
+        priority: AVERAGE
+        description: The process collector reported an error.
+    - uuid: 367ef405a05b4f2590a8dffeae06cdf4
+      name: 'Open OnDemand exporter: puns collector error'
+      type: DEPENDENT
+      key: ood.exporter.collector.puns.error
+      history: 30d
+      value_type: UNSIGNED
+      description: 'Error status of the puns collector: 0=no error, 1=error.'
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_exporter_collect_error{collector="puns"}
+        - value
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: exporter
+      - tag: Application
+        value: Open OnDemand
+      triggers:
+      - uuid: 1366782c1f2544439fda92349e793840
+        expression: max(/Open OnDemand by Prometheus/ood.exporter.collector.puns.error,5m)>0
+        name: 'Open OnDemand exporter: puns collector error'
+        priority: AVERAGE
+        description: The puns collector reported an error.
+    - uuid: 00d3ec9fb871463692a5194e27c872ae
+      name: 'Open OnDemand exporter: apache collector timeout'
+      type: DEPENDENT
+      key: ood.exporter.collector.apache.timeout
+      history: 30d
+      value_type: UNSIGNED
+      description: 'Timeout status of the apache collector: 0=no timeout, 1=timeout.'
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_exporter_collect_timeout{collector="apache"}
+        - value
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: exporter
+      - tag: Application
+        value: Open OnDemand
+      triggers:
+      - uuid: c79ae18b90e9463ba7dd5f88a79bedad
+        expression: max(/Open OnDemand by Prometheus/ood.exporter.collector.apache.timeout,5m)>0
+        name: 'Open OnDemand exporter: apache collector timeout'
+        priority: AVERAGE
+        description: The apache collector reported a timeout.
+    - uuid: c5043af6fea34bc19b38ec3ccde29ea0
+      name: 'Open OnDemand exporter: process collector timeout'
+      type: DEPENDENT
+      key: ood.exporter.collector.process.timeout
+      history: 30d
+      value_type: UNSIGNED
+      description: 'Timeout status of the process collector: 0=no timeout, 1=timeout.'
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_exporter_collect_timeout{collector="process"}
+        - value
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: exporter
+      - tag: Application
+        value: Open OnDemand
+      triggers:
+      - uuid: 4585ff2c8d5f4cf98b37e28f47ee30b3
+        expression: max(/Open OnDemand by Prometheus/ood.exporter.collector.process.timeout,5m)>0
+        name: 'Open OnDemand exporter: process collector timeout'
+        priority: AVERAGE
+        description: The process collector reported a timeout.
+    - uuid: aa2056600a5e4e79b7fa6702693ca940
+      name: 'Open OnDemand exporter: puns collector timeout'
+      type: DEPENDENT
+      key: ood.exporter.collector.puns.timeout
+      history: 30d
+      value_type: UNSIGNED
+      description: 'Timeout status of the puns collector: 0=no timeout, 1=timeout.'
+      preprocessing:
+      - type: PROMETHEUS_PATTERN
+        parameters:
+        - ondemand_exporter_collect_timeout{collector="puns"}
+        - value
+      master_item:
+        key: web.page.get["{$OOD.METRICS.HOST}","{$OOD.METRICS.PATH}","{$OOD.METRICS.PORT}"]
+      tags:
+      - tag: component
+        value: exporter
+      - tag: Application
+        value: Open OnDemand
+      triggers:
+      - uuid: f9f3627bfd2545769aa9836b1db88271
+        expression: max(/Open OnDemand by Prometheus/ood.exporter.collector.puns.timeout,5m)>0
+        name: 'Open OnDemand exporter: puns collector timeout'
+        priority: AVERAGE
+        description: The puns collector reported a timeout.
+    - uuid: f60343892f584fe593768aafb7df4d91
+      name: 'Open OnDemand: Client connections per active PUN'
+      type: CALCULATED
+      key: ood.connections.per_pun
+      delay: 1m
+      history: 30d
+      value_type: FLOAT
+      params: last(//ood.client_connections)/(last(//ood.active_puns)+0.000001)
+      description: Current client connections divided by active PUN count.
+      tags:
+      - tag: component
+        value: connections
+      - tag: Application
+        value: Open OnDemand
+    macros:
+    - macro: '{$OOD.METRICS.HOST}'
+      value: localhost
+      description: Host used by the local Zabbix agent to reach ondemand_exporter.
+    - macro: '{$OOD.METRICS.PATH}'
+      value: metrics
+      description: ondemand_exporter metrics path, without a leading slash.
+    - macro: '{$OOD.METRICS.PORT}'
+      value: '9301'
+      description: ondemand_exporter metrics port.
+    - macro: '{$OOD.PUN.MEMORY.WARN}'
+      value: '80'
+      description: Warning threshold for aggregate PUN memory utilization, percent.
+    - macro: '{$OOD.COLLECTOR.DURATION.WARN}'
+      value: '5'
+      description: Warning threshold for 5-minute average exporter collector duration, seconds.
+    tags:
+    - tag: class
+      value: software
+    - tag: target
+      value: openondemand
+    dashboards:
+    - uuid: aac171d5e9dc4a0c90bca98aaaf1042a
+      name: Open OnDemand overview
+      pages:
+      - widgets:
+        - type: graph
+          width: '36'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid.0
+            value:
+              host: Open OnDemand by Prometheus
+              name: 'Open OnDemand: Active users and PUNs'
+          - type: STRING
+            name: reference
+            value: OODA
+        - type: graph
+          x: '36'
+          width: '36'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid.0
+            value:
+              host: Open OnDemand by Prometheus
+              name: 'Open OnDemand: Connections'
+          - type: STRING
+            name: reference
+            value: OODB
+        - type: graph
+          y: '5'
+          width: '36'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid.0
+            value:
+              host: Open OnDemand by Prometheus
+              name: 'Open OnDemand: PUN memory utilization'
+          - type: STRING
+            name: reference
+            value: OODC
+        - type: graph
+          x: '36'
+          y: '5'
+          width: '36'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid.0
+            value:
+              host: Open OnDemand by Prometheus
+              name: 'Open OnDemand: Passenger request rate'
+          - type: STRING
+            name: reference
+            value: OODD
+    - uuid: 969df38e27c94318a31ff00832edd3f9
+      name: Open OnDemand runtime
+      pages:
+      - widgets:
+        - type: graph
+          width: '36'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid.0
+            value:
+              host: Open OnDemand by Prometheus
+              name: 'Open OnDemand: PUN memory'
+          - type: STRING
+            name: reference
+            value: OODE
+        - type: graph
+          x: '36'
+          width: '36'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid.0
+            value:
+              host: Open OnDemand by Prometheus
+              name: 'Open OnDemand: Passenger processes'
+          - type: STRING
+            name: reference
+            value: OODF
+        - type: graph
+          y: '5'
+          width: '36'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid.0
+            value:
+              host: Open OnDemand by Prometheus
+              name: 'Open OnDemand: Passenger memory'
+          - type: STRING
+            name: reference
+            value: OODG
+        - type: graph
+          x: '36'
+          y: '5'
+          width: '36'
+          height: '5'
+          fields:
+          - type: GRAPH
+            name: graphid.0
+            value:
+              host: Open OnDemand by Prometheus
+              name: 'Open OnDemand exporter: Collector duration'
+          - type: STRING
+            name: reference
+            value: OODH
+  graphs:
+  - uuid: f7a380b2d5614c62bfd4afc06c8833f4
+    name: 'Open OnDemand: Active users and PUNs'
+    graph_items:
+    - drawtype: BOLD_LINE
+      color: 199C0D
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.active_puns
+    - drawtype: BOLD_LINE
+      color: 2774A4
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.unique_client_connections
+      sortorder: '1'
+    - drawtype: BOLD_LINE
+      color: F63100
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.unique_websocket_clients
+      sortorder: '2'
+  - uuid: 4ad9e5f163cc4bab963ae9174af36f8a
+    name: 'Open OnDemand: Connections'
+    graph_items:
+    - drawtype: BOLD_LINE
+      color: 199C0D
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.client_connections
+    - drawtype: BOLD_LINE
+      color: 2774A4
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.websocket_connections
+      sortorder: '1'
+  - uuid: 8b5bf7e4ef8f44748b2021a59183680a
+    name: 'Open OnDemand: PUN memory'
+    graph_items:
+    - drawtype: BOLD_LINE
+      color: 199C0D
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.pun.memory.rss
+    - drawtype: BOLD_LINE
+      color: 2774A4
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.pun.memory.vms
+      sortorder: '1'
+  - uuid: 4b8bca0c6293427d8fb5109ce11775d3
+    name: 'Open OnDemand: PUN memory utilization'
+    graph_items:
+    - drawtype: BOLD_LINE
+      color: 199C0D
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.pun.memory.pct
+    yaxismax: '100'
+  - uuid: 75d29c938e1e4eada63c9173c11c1369
+    name: 'Open OnDemand: Passenger processes'
+    graph_items:
+    - drawtype: BOLD_LINE
+      color: 199C0D
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.passenger.instances
+    - drawtype: BOLD_LINE
+      color: 2774A4
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.passenger.dashboard.app_count
+      sortorder: '1'
+    - drawtype: BOLD_LINE
+      color: F63100
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.passenger.dashboard.processes
+      sortorder: '2'
+  - uuid: 872342ea8f8f4cd69060f972605f7b5e
+    name: 'Open OnDemand: Passenger memory'
+    graph_items:
+    - drawtype: BOLD_LINE
+      color: 199C0D
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.passenger.dashboard.rss
+    - drawtype: BOLD_LINE
+      color: 2774A4
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.passenger.dashboard.real_memory
+      sortorder: '1'
+  - uuid: 5ac073f15fdf43f296aeffee663da968
+    name: 'Open OnDemand: Passenger request rate'
+    graph_items:
+    - drawtype: BOLD_LINE
+      color: 199C0D
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.passenger.dashboard.requests.per_min
+  - uuid: bafae0629871488ba39082276eba561b
+    name: 'Open OnDemand exporter: Collector duration'
+    graph_items:
+    - drawtype: BOLD_LINE
+      color: 199C0D
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.exporter.collector.apache.duration
+    - drawtype: BOLD_LINE
+      color: 2774A4
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.exporter.collector.passenger.duration
+      sortorder: '1'
+    - drawtype: BOLD_LINE
+      color: F63100
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.exporter.collector.process.duration
+      sortorder: '2'
+    - drawtype: BOLD_LINE
+      color: A54F10
+      item:
+        host: Open OnDemand by Prometheus
+        key: ood.exporter.collector.puns.duration
+      sortorder: '3'
